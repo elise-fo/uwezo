@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset='utf-8' />
+    <title>Uwezo mapping</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1' />
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css">
+    <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v2.3.1/mapbox-gl.js'></script>
+    <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v2.3.1/mapbox-gl.css' rel='stylesheet' />
+    <style>
+
+    @import url('https://fonts.googleapis.com/css?family=Open+Sansp');
+    @import url('https://fonts.googleapis.com/css?family=Raleway');
+
+
+    html {
+      margin: 0;
+      padding: 0;
+      max-width: 100vw;
+      max-height: 100vh;
+    }
+    
+    * {
+            box-sizing: border-box;
+        }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'OpenSans', sans-serif;
+      max-width: 100vw;
+      max-height: 100vh;
+    }
+
+    h3 {
+      font-family: 'Raleway', sans-serif;
+    }
+
+    #main {
+      padding: 0;
+      margin:0;
+      width:98vw;
+      float:left;
+      clear:left;
+    }
+
+    #menu {
+      position: relative;
+      float: left;
+      top: 0px;
+      bottom: 0px;
+      width: 100vw;
+      border-radius: 10px;
+      border-color: black;
+    }
+
+    #filters-container {
+      position:fixed;
+      right:30px;
+      top:20px;
+      width: 280px;
+      float:right; 
+      opacity: 0.5;
+      z-index:1;
+    }
+
+    form {
+      display: flex;
+      flex-wrap: wrap;
+      flex-direction: column;
+      font-size: 14px;
+      margin:3px;
+    }
+
+    label {
+      display: flex;
+      cursor: pointer;
+      font-weight: 500;
+      position: relative;
+      overflow: auto;
+      margin-bottom: 0.375em;
+    }
+    
+    label input {
+      position: absolute;
+      left: -9999px;
+    }
+    label input:checked + span {
+      opacity:0.5;
+      background-color: black;
+      color:white;
+    }
+    label input:checked + span:before {
+      box-shadow: inset 0 0 0 0.4375em white;
+    }
+    label span {
+      display: flex;
+      align-items: center;
+      padding: 0.375em 0.75em 0.375em 0.375em;
+      border-radius: 99em;
+      transition: 0.25s ease;
+    }
+    label span:hover {
+      background-color: black;
+      opacity:0.5;
+      color:white;
+    }
+    label span:before {
+      display: flex;
+      flex-shrink: 0;
+      content: "";
+      background-color: #fff;
+      width: 1.5em;
+      height: 1.5em;
+      border-radius: 50%;
+      margin-right: 0.375em;
+      transition: 0.25s ease;
+      box-shadow: inset 0 0 0 0.125em black;
+    }
+
+    #uwezo-presentation {
+      height:0px;
+    }
+
+    #map {
+      position: relative;
+      top: 0px; 
+      width: 100vw;
+      height:100vh;
+    }
+
+    .contact-container {
+      display:flex;
+      flex-wrap: wrap;
+      justify-content: space-evenly;
+      font-size: 38px;
+      text-align: center;
+      vertical-align: middle;
+    }
+    .contact {
+      vertical-align: middle;
+      width:30px;
+      height: 30px;
+      font-size: 30px;
+      margin:10px;
+    }
+  
+    .contact-link {
+      align-self: center;
+      text-decoration: none;
+      font-size: 30px;
+      opacity:0.4;
+      color:black;
+    }
+
+    .contact-button {
+      border: none;
+      background:none;
+      padding:0px;
+      margin:0px;
+      font-size: 30px;
+      opacity:0.4;
+    }
+    
+
+    .modal {
+      display: none; /* Hidden by default */
+      position: fixed; /* Stay in place */
+      z-index: 1; /* Sit on top */
+      left: 0;
+      top: 0;
+      width: 100%; /* Full width */
+      height: 100%; /* Full height */
+      overflow: auto; /* Enable scroll if needed */
+      font-size: 18px;
+      background-color: rgb(0,0,0); /* Fallback color */
+      background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+    }
+
+    /* Modal Content/Box */
+    .modal-content {
+      background-color: #fefefe;
+      color:black;
+      margin: 15% auto; /* 15% from the top and centered */
+      padding: 20px;
+      border: 1px solid #888;
+      width: 40%; /* Could be more or less, depending on screen size */
+    }
+
+    /* The Close Button */
+    .close {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+    }
+
+    .close:hover,
+    .close:focus {
+      color: black;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .right {
+      position:absolute;
+      right:5px;
+      top:0px;
+    }
+
+    .marker {
+      background-image: url('http://simpleicon.com/wp-content/uploads/map-marker-1.png');
+      background-size: cover;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      cursor: pointer;
+      }
+
+    .mapboxgl-popup {
+      max-width: 200px;
+      }
+
+    .mapboxgl-popup-content {
+      text-align: center;
+      overflow: auto;
+      background-color: #487885;
+      border-radius: 6px;
+      color: white;
+      }
+
+    /* Popup container */
+    .popup {
+      position: absolute;
+      display: inline-block;
+      cursor: pointer;
+    }
+
+    /* The actual popup (appears on top) */
+    .popup .popuptext {
+      display:none;
+      overflow: auto;
+      width: 50vw;
+      height:100vh;
+      background-color: #487885;
+      color: #fff;
+      text-align: center;
+      border-radius: 6px;
+      position: absolute;
+      z-index: 2;
+    }
+
+    /* Popup arrow */
+    .popup .popuptext::after {
+      content: "";
+      position: relative;
+    }
+
+    /* Toggle this class when clicking on the popup container (hide and show the popup) */
+    .popup .show {
+      display:block;
+      /* visibility: visible; */
+      -webkit-animation: fadeIn 1s;
+      animation: fadeIn 1s
+    }
+
+    /* Add animation (fade in the popup) */
+    @-webkit-keyframes fadeIn {
+      from {opacity: 0;}
+      to {opacity: 1;}
+    }
+
+    @keyframes fadeIn {
+      from {opacity: 0;}
+      to {opacity:1 ;}
+    }
+
+    .collapsible {
+      background-color: #777;
+      color: white;
+      cursor: pointer;
+      padding: 18px;
+      width: 100%;
+      border: none;
+      text-align: left;
+      outline:none;
+      font-family: 'OpenSans', sans-serif;
+      font-size: 14px;
+    }
+
+    .active, .collapsible:hover {
+      background-color: #555;
+    }
+
+    .collapsible:after {
+      content: '\002B';
+      color: white;
+      font-weight: bold;
+      float: right;
+      margin-left: 5px;
+    }
+
+    .active:after {
+      content: "\2212";
+    }
+
+    .stakeholdersDetails {
+      margin:15px;
+    }
+
+    .content {
+      padding: 0 0px;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.2s ease-out;
+      background-color: white;
+    }
+
+    .description {
+      display: grid;
+      grid-column-gap:15px;
+      grid-template-columns: repeat(3, minmax(100px, auto));
+      grid-template-rows: repeat(auto-fill, minmax(100px, auto));
+    }
+
+    .description div:nth-child(1) {
+      grid-column: 1 / 3;
+      grid-row: 1;
+    }
+
+    .description div:nth-child(2) {
+      grid-column: 3;
+      grid-row: 1;
+    }
+
+    .description div:nth-child(6) {
+      grid-column: 1/3;
+      grid-row: 3;
+    }
+
+    .details {
+      display:flex;
+      flex-direction: column;
+    }
+    span.detailsTitle {
+      text-align:left;
+      padding: 10px;
+      font-family: 'Raleway', sans-serif;
+      text-transform: uppercase;
+      display:inline-block;
+      margin-bottom: 5px;
+      min-height:15px;
+      opacity: 0.7;
+    }
+
+    .detailsContentcontainer {
+      margin-right:10px;
+      margin-left:10px;
+      display:flex;
+      flex-wrap: wrap;
+      vertical-align: center;
+      align-content: space-between;
+      /* justify-content: space-evenly; */
+      gap:10px;
+    }
+    .detailsContent {
+      padding: 10px;
+      border-radius: 0.25rem;
+      background-color: #028db0;
+      opacity: 0.6;
+    }
+    </style>
+</head>
+<body>
+  <script>
+    (function (global, factory) {
+      typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
+      typeof define === 'function' && define.amd ? define(factory) :
+      (global = global || self, global.InnovatorsMapTz = factory());
+    }(this, (function () { 'use strict';
+
+      async function getRequest(stakeholder, womenspecific, socialspecific){
+        return await request("GET",stakeholder, womenspecific, socialspecific);
+      };
+
+      async function request(method, stakeholder, womenspecific, socialspecific){
+        let url = `https://uwezobackend.herokuapp.com/stakeholder/${stakeholder}/womenspecific/${womenspecific}/socialentrepreneurship/${socialspecific}`;
+        console.log(url)
+
+        const response = await fetch(url);
+        if (response.ok){
+          try {
+            const res = await response.json();
+            return res;
+          } catch (error) {
+            return null;
+          }
+        }
+        else {
+          const error = await response.json();
+          console.log("Response error: ", error);
+          throw error;
+        }
+      };
+
+      class InnovatorsMapTz {
+        constructor(){}
+        getInnovators(stakeholder, womenspecific, socialspecific){
+          // if(!this.apiKey)
+          // 	throw new Error('API Key required, go to https://innovate.co.tz/app/studio/developer to get your key.');
+          return getRequest(stakeholder, womenspecific, socialspecific);
+        }
+      }
+      return InnovatorsMapTz;
+
+    })));
+
+  </script>
+  <script>
+
+  /* to adapt to get the good url */
+  function changeRadio() {
+    var categories = ['classification', 'women-specific', 'social-entrepreneur-specific']
+    var categories_value = {}
+    for (category = 0; category < categories.length; category++){
+      var ele = document.getElementsByName(categories[category]);
+      for(i = 0; i < ele.length; i++) {
+            if(ele[i].checked) {
+              categories_value[categories[category]] = ele[i].value;
+            }
+        }
+    }
+
+    fetchInnovators(categories_value['classification'],categories_value['women-specific'],categories_value['social-entrepreneur-specific']);
+
+  };
+  </script>
+  <div id='main'>
+
+    <div id = 'menu'>
+
+      <!-- Filters -->
+      <div id='filters-container'>
+        <button class="collapsible">Filters</button>
+        <div class="content" id="filters">
+          <button class="collapsible">Women Specific</button>
+          <div class="content" id="ws">
+            <form>
+              <label>
+                <input type="radio" name="women-specific" value="All" onchange="changeRadio()" checked/>
+                <span>All</span>
+              </label>
+              <label>
+                <input type="radio" name="women-specific" value="Yes" onchange="changeRadio()"/>
+                <span>Yes</span>
+              </label>
+              <label>
+                <input type="radio" name="women-specific" value="No" onchange="changeRadio()"/>
+                <span>No</span>
+              </label>
+            </form>
+          </div>
+          <button class="collapsible">Social Entrepreneur specific</button>
+          <div class="content" id="ses">
+            <form>
+              <label>
+                <input type="radio"  name="social-entrepreneur-specific" value="All" onchange="changeRadio()" checked/>
+                <span>All</span>
+              </label>
+              <label>
+                <input type="radio" name="social-entrepreneur-specific" value="Yes" onchange="changeRadio()" />
+                <span>Yes</span>
+              </label>
+              <label>
+                <input type="radio" name="social-entrepreneur-specific" value="No" onchange="changeRadio()" />
+                <span>No</span>
+              </label>
+            </form>
+          </div>
+          
+          <button class="collapsible">Type of Stakeholders</button>
+          <div class="content" id = "c">
+            <form>
+              <label>
+                <input type="radio"  name="classification" value="All" onchange="changeRadio()" checked/>
+                <span>All</span>
+              </label>
+              <label>
+                <input type="radio" name="classification" value="IAH" onchange="changeRadio()" />
+                <span>Incubators, Accelerators & Hubs</span>
+              </label>
+              <label>
+                <input type="radio" name="classification" value="PAN" onchange="changeRadio()" />
+                <span>Professional Associations & Networks</span>
+              </label>
+              <label>
+                <input type="radio" name="classification" value="NGO" onchange="changeRadio()" />
+                <span>NGOs</span>
+              </label>
+              <label>
+                <input type="radio" name="classification" value="DA" onchange="changeRadio()" />
+                <span>Development Agency</span>
+              </label>
+              <label>
+                <input type="radio" name="classification" value="MBI" onchange="changeRadio()" />
+                <span>MFIs, Banks, Investors</span>
+              </label>
+              <label>
+                <input type="radio" name="classification" value="LCB" onchange="changeRadio()" />
+                <span>Local Consultants & Businesses</span>
+              </label>
+              <label>
+                <input type="radio" name="classification" value="PI" onchange="changeRadio()" />
+                <span>Public Inititiaves</span>
+              </label>
+            </form>
+            </div>  
+          </div>
+        </div>
+      </div>
+
+      <script>
+      var coll = document.getElementsByClassName("collapsible");
+      var i;
+
+      for (i = 0; i < coll.length; i++) {
+        coll[i].addEventListener("click", function() {
+          this.classList.toggle("active");
+          var content = this.nextElementSibling;
+          if (content.style.maxHeight){
+            content.style.maxHeight = null;
+          } else {
+            if (content.id == 'filters'){
+              content.style.maxHeight = content.scrollHeight + "px";
+            } else {
+              filterContainer = document.getElementById("filters")
+              if (filterContainer.scrollHeight + content.scrollHeight + 20 < window.innerHeight) {
+                filterContainer.style.maxHeight = (filterContainer.scrollHeight + content.scrollHeight) +"px";
+                content.style.maxHeight = content.scrollHeight + "px"; 
+              }
+              else {
+                if (content.id == 'c') {
+                  filterContainer.style.maxHeight = (filterContainer.scrollHeight + 200) +"px";
+                  content.style.maxHeight = "200px"; 
+                  content.style.overflow = "auto";
+                } 
+                else {
+                  c = document.getElementById("c")
+                  c.style.maxHeight = "200px"; 
+                  c.style.overflow = "auto";
+                  filterContainer.style.maxHeight = (filterContainer.scrollHeight + content.scrollHeight) +"px";
+                  content.style.maxHeight = content.scrollHeight + "px"; 
+                }
+
+              }
+            }
+          } 
+        });
+      }
+      </script>
+
+      <!-- Popup -->
+      <div id = 'uwezo-presentation'>
+          <div class="popup">
+            <span class="popuptext" id="myPopup"></span>
+          </div>
+      </div>
+
+      <!-- Map  -->
+      <div id='map'></div>
+    </div>
+  </div>
+
+  <script>
+    let innovatorsMap;
+    var defaultMaxBounds = [
+    27.583,  -13.33, // longmin, latmin
+    44.450, 0.500 // longmax, latmax
+      ];
+
+    window.addEventListener('load', function(){
+        innovatorsMap = new InnovatorsMapTz();
+        fetchInnovators("All", "All", "All");
+          });
+
+    mapboxgl.accessToken = 'pk.eyJ1IjoidXdlem8iLCJhIjoiY2tuamNvMWhrMHdiMzJ2cGdub2F1Y2E0cCJ9.IIuSJHiT0q41rQxbLFABBQ';
+
+    var map = new mapboxgl.Map({
+      container: 'map',
+      style: 'mapbox://styles/mapbox/light-v10',
+      center:  [34.8234540265851, -6.27035338020445],
+      zoom: 4.8,
+      logoPosition:'bottom-right'
+    });
+
+    map.addControl(new mapboxgl.NavigationControl(),'bottom-right');
+
+    var innovators = {
+      'IAH':[],
+      'PAN':[],
+      'NGO':[],
+      'DA':[],
+      'PI':[],
+      'MBI':[],
+      'LCB':[]
+    };
+
+
+    async function fetchInnovators(stakeholder, womenspecific, socialspecific){
+            document.body.classList.add("fetching-innovators");
+
+            innovators = {
+              'IAH':[],
+              'PAN':[],
+              'NGO':[],
+              'DA':[],
+              'PI':[],
+              'MBI':[],
+              'LCB':[]
+            };
+
+            const { data } = await innovatorsMap.getInnovators(stakeholder, womenspecific, socialspecific);
+
+            console.log("Innovators: ", data);
+            document.body.classList.remove("fetching-innovators");
+
+            data.forEach(stakeholder => {
+              const { name, 
+                description, 
+                location, 
+                country,
+                locationName, 
+                sectors, 
+                classification, 
+                type_stakeholder,
+                womenSpecific, 
+                socialEntrepreneurSpecific,
+                innovationStages,
+                fundingType,
+                supportType,
+                yearFounded, 
+                email,
+                phone,
+                facebook,
+                instagram,
+                website,
+                socialMedias } = stakeholder;
+
+              const stakeholderItem = {
+                  type: 'Feature',
+                  geometry: location,
+                  properties: {
+                    title: name,
+                    locationName : locationName,
+                    country : country,
+                    socialMedias : socialMedias,
+                    email: email,
+                    website : website,
+                    phone:phone,
+                    instagram:instagram,
+                    facebook:facebook,
+                    sectors : sectors,
+                    description: description,
+                    classification : classification,
+                    type_stakeholder:type_stakeholder,
+                    womenSpecific : womenSpecific,
+                    socialEntrepreneurSpecific: socialEntrepreneurSpecific,
+                    innovationStages : innovationStages,
+                    fundingType : fundingType, 
+                    supportType: supportType,
+                    yearFounded: yearFounded
+                  }}
+
+              innovators[classification].push(stakeholderItem)
+            });
+
+
+          function classification_layer(name, stakeholder_item, color){
+            // add markers to map
+            if (map.getSource(name) != undefined) {
+              map.removeLayer(name);
+              map.removeSource(name);
+            }
+            map.addSource(name,{'type':'geojson','data':{
+              type: 'FeatureCollection',
+              features:stakeholder_item
+              }})
+            map.addLayer({
+            'id': name,
+            'type': 'circle',
+            'source': name,
+            'paint': {
+            'circle-color': color,
+            'circle-radius': 6,
+            'circle-stroke-width': 2,
+            'circle-stroke-color': '#ffffff'
+            }
+            });
+
+            // Create a popup, but don't add it to the map yet.
+            const popup = new mapboxgl.Popup({
+              closeButton: false,
+              closeOnClick: false
+            });
+  
+            map.on('mouseenter', name, (marker) => {              
+              // Change the cursor style as a UI indicator.
+              map.getCanvas().style.cursor = 'pointer';
+              marker = marker.features[0]
+              // Copy coordinates array.
+              const coordinates = marker.geometry.coordinates.slice();
+              const description = '<h3>' 
+                      + marker.properties.title + '</h3><p>' 
+                      + marker.properties.type_stakeholder + "</p><p>"
+                      + "Established: "+ marker.properties.yearFounded + '</p>'
+              
+              // Populate the popup and set its coordinates
+              // based on the feature found.
+              popup.setLngLat(coordinates).setHTML(description).addTo(map);
+            });
+
+            map.on('click', name, () => {
+            map.getCanvas().style.cursor = '';
+            popup.remove();
+            });
+
+            map.on('mouseleave', name, () => {
+            map.getCanvas().style.cursor = '';
+            popup.remove();
+            });
+  
+            map.on('click', name, (marker) => {              
+              // Change the cursor style as a UI indicator.
+
+              marker = marker.features[0]
+
+              const coordinates = marker.geometry.coordinates.slice();
+
+              const descriptionclick = `<div class = "stakeholdersDetails">
+                <span class="close right" onclick="popUpCloseClick()">&times;</span>
+                <h3> ${marker.properties.title} </h3>
+                <div>
+                  <p> ${marker.properties.locationName} </p>
+                </div>
+                <div>
+                  <p>Founded in <span> ${marker.properties.yearFounded}</span></p>
+                </div>
+                <hr>
+                <div class = "description">
+                  <div class = "details">
+                    <span class = "detailsTitle"> Description </span>
+                    <p style = "text-align: left; margin:10px; opacity:0.8"> ${marker.properties.description} </p>
+                  </div>
+                  <div class = "details">
+                    <span class = "detailsTitle"> Contact </span>
+                    <div class="contact-container">
+                      ${datapreprocess(
+                          marker.properties.website, 
+                          'Website',
+                          `<div class="contact">
+                            <a class="contact-link" href = "${marker.properties.website}"><i class="fas fa-globe" ></i></a>
+                          </div>`
+                          )}
+                      ${datapreprocess(
+                          marker.properties.email, 
+                          'Email',
+                          `<div class="contact">
+                          <button id="emailButton" class="contact-button" onclick="modalButtonClick('emailModal')"><i class="fas fa-envelope"></i></button>
+                          <div id="emailModal" class="modal">
+                            <div class="modal-content">
+                              <span class="close" onclick="modalCloseClick('emailModal')">&times;</span>
+                              <p>Contact: ${marker.properties.email}</p>
+                            </div>
+                          </div>
+                          </div>`
+                          )}
+                      ${datapreprocess(
+                          marker.properties.phone, 
+                          'Phone',
+                          `<div class="contact">
+                          <button id="phoneButton" class="contact-button" onclick="modalButtonClick('phoneModal')"><i class="fas fa-phone-square"></i></button>
+                          <div id="phoneModal" class="modal">
+                            <div class="modal-content">
+                              <span class="close" onclick="modalCloseClick('phoneModal')">&times;</span>
+                              <p>Contact: ${marker.properties.phone}</p>
+                            </div>
+                          </div>
+                          </div>`
+                          )}
+                      ${datapreprocess(
+                          marker.properties.facebook, 
+                          'Website',
+                          `<div class="contact">
+                            <a class="contact-link" href = "${marker.properties.facebook}"><i class="fab fa-facebook"></i></a>
+                          </div>`
+                          )}
+                      ${datapreprocess(
+                          marker.properties.instagram, 
+                          'Website',
+                          `<div class="contact">
+                            <a class="contact-link" href = "https://www.instagram.com/${marker.properties.instagram.replace('@','')}"><i class="fab fa-instagram"></i></a>
+                          </div>`
+                          )}
+                      
+                    </div>
+                  </div>
+                  ${datapreprocess(marker.properties.type_stakeholder, 'Type of stakeholder')}
+                  ${datapreprocess(marker.properties.sectors, 'Sectors covered')}
+                  ${datapreprocess(marker.properties.supportType, 'Support type')}
+                  ${datapreprocess(marker.properties.innovationStages, 'Innovation stage covered')}
+                  ${datapreprocess(marker.properties.fundingType, 'Funding Type')}
+              </div>
+              </div>`
+
+              var popuponclick = document.getElementById("myPopup");
+              popuponclick.innerHTML = descriptionclick;
+              popuponclick.classList.toggle("show");
+              popuponclick.style.display = "block";
+              var mapElement = document.getElementById("map");
+              mapElement.style.width = "50vw";
+              mapElement.style.float = "right";
+              mapElement.style.right = "-20px";
+              
+              // Populate the popup and set its coordinates
+              // based on the feature found.
+              // popuponclick.setLngLat(coordinates).setOffset(10).setMaxWidth('100').setHTML(descriptionclick).addTo(map);
+
+              map.resize();
+
+              map.flyTo({
+                center: marker.geometry.coordinates,
+
+                zoom: 9,
+                bearing: 0,
+                
+                // These options control the flight curve, making it move
+                // slowly and zoom out almost completely before starting
+                // to pan.
+                speed: 0.5, // make the flying slow
+                curve: 1, // change the speed at which it zooms out
+        
+                // This can be any easing function: it takes a number between
+                // 0 and 1 and returns another number between 0 and 1.
+                easing: (t) => t,
+                
+                // this animation is considered essential with respect to prefers-reduced-motion
+                essential: true
+                });
+            });
+          };
+
+            // make a marker for each feature and add to the map
+
+        layers_keys = Object.keys(innovators)
+        colors = ['#6082B6', '#0081A1','#006077','#2AA1BD','#003A48','#5F9EA0','#6CB2C2','#6F8FAF']
+        for (i = 0; i < layers_keys.length; i++) {
+          var name = `innovators_${layers_keys[i]}`
+          classification_layer(name, innovators[layers_keys[i]], colors[i])
+        };
+
+        const container = document.getElementById('myPopup');
+        container.addEventListener('click', function(e){
+          if (e.target.classList.contains('emailButton')) {
+            var modal = document.getElementById("emailModal");
+            modal.style.display = "block";
+          };
+        });
+        container.addEventListener('click', function(e){
+          if (e.target.classList.contains('phoneButton')) {
+            var modal = document.getElementById("phoneModal");
+            modal.style.display = "block";
+          };
+        });
+
+
+        function dataprocess(data){
+          var array = data.split(';')
+          var htmlContent = ""
+          if (array.length == 1) {
+            htmlContent += `<div class = "detailsContent"> ${data}</div>`        }
+          else {
+            for(var i = 0 ; i < array.length ; i++){
+              htmlContent += `<div class = "detailsContent"> ${array[i]}</div>`
+            }
+          }
+          return htmlContent
+        };
+
+        function datapreprocess(data, title, img){
+          htmlContent = ''
+          if (data=='' || data == 'No data'){
+            htmlContent = ''
+          }
+          else if (img!=undefined) {
+            htmlContent = img
+          }
+          else {
+            htmlContent =`               
+                  <div class = "details">
+                    <span class = "detailsTitle"> ${title} </span>
+                    <div class = "detailsContentcontainer"> ${dataprocess(data)} </div>
+                  </div>`
+          }
+          return htmlContent
+        }
+          };
+          
+
+      function modalButtonClick(element){
+        console.log('opening')
+        var modal = document.getElementById(element);
+        modal.style.display = "block";
+      };
+
+    function modalCloseClick(element){
+      var modal = document.getElementById(element);
+      modal.style.display = "none";
+    };
+
+    function popUpCloseClick(){
+            var popuponclick = document.getElementById("myPopup");
+            popuponclick.classList.toggle("hide");
+            popuponclick.style.display = "none";
+            var mapElement = document.getElementById("map");
+            mapElement.style.width = "100vw";
+            mapElement.style.float = "left";
+            mapElement.style.right = "0px";
+
+            map.resize();
+            map.fitBounds([
+              [49.342659, -11.736927], // southwestern corner of the bounds
+              [21.545898, 0.224646] // northeastern corner of the bounds
+              ]);
+            map.flyTo({
+              center:  [34.8234540265851, -6.27035338020445],
+              zoom: 4.8,
+              bearing: 0,
+              
+              // These options control the flight curve, making it move
+              // slowly and zoom out almost completely before starting
+              // to pan.
+              speed: 0.5, // make the flying slow
+              curve: 1, // change the speed at which it zooms out
+      
+              // This can be any easing function: it takes a number between
+              // 0 and 1 and returns another number between 0 and 1.
+              easing: (t) => t,
+              
+              // this animation is considered essential with respect to prefers-reduced-motion
+              essential: true
+              });
+    };
+
+
+  </script>
+</div>
+
+</body>
+</html>
